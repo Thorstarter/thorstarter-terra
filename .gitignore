@@ -1,0 +1,15 @@
+/target
+merkle/node_modules
+merkle/addresses.json
+sale/target
+sale/schema
+sale/artifacts
+tiers/target
+tiers/schema
+tiers/artifacts
+.cargo-ok
+**/*.rs.bk
+.DS_Store
+*.iml
+.idea
+node_modules
