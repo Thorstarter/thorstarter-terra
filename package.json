@@ -1,0 +1,25 @@
+{
+  "name": "thorstarter-terra",
+  "version": "1.0.0",
+  "description": "_Thorstarter's contracts for the Terra blockchain_",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorstarter/thorstarter-terra.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thorstarter/thorstarter-terra/issues"
+  },
+  "homepage": "https://github.com/thorstarter/thorstarter-terra#readme",
+  "dependencies": {
+    "@terra-money/terra.js": "^3.0.7",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.2.27"
+  }
+}

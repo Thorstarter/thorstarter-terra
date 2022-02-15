@@ -2,7 +2,8 @@ const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
 
 const participantsStr = `
-0x0000,terra1uj2txzk03yq9exxqckuryqf548qjqlphyryjjy,0,0,1
+terra1uj2txzk03yq9exxqckuryqf548qjqlphyryjjy,2500,1,100
+terra1tnxg0hpk6rgsk2kjx8mtrqv5lnn38fhk3styuh,2500,1,100
 `;
 
 const totals = {};
@@ -11,12 +12,12 @@ for (let p of participantsStr
   .map((a) => a.trim())
   .filter((a) => a)) {
   const parts = p.split(",");
-  totals[parts[1]] = (totals[parts[1]] || 0.0) + parseFloat(parts[4]);
+  totals[parts[0]] = (totals[parts[0]] || 0.0) + parseFloat(parts[3]);
 }
 const participants = Object.keys(totals).map((k) => ({
   address: k,
   allocation:
-    (totals[k] * 100) | (0 === 0)
+    ((totals[k] * 100) | 0) === 0
       ? "0"
       : String((totals[k] * 100) | 0) + "0000",
 }));

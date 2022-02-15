@@ -16,12 +16,12 @@ async function main() {
   const tx = await sendTransaction([
     new MsgInstantiateContract(walletAddress, walletAddress, codeId, {
       token: "terra16zrhr55k9syrlmeqtae9ahccpgld843gu04qp6",
-      start_time: 1641223800,
-      end_time: 1641245400,
-      raising_amount: "500000000000",
-      offering_amount: "20000000000000",
-      vesting_initial: "100000",
-      vesting_time: 15552000,
+      start_time: 1644939000,
+      end_time: 1645025400,
+      raising_amount: "300000"+"000000",
+      offering_amount: "3529411"+"764705",
+      vesting_initial: "0",
+      vesting_time: 10368000,
       merkle_root:
         "49b51150f947ef3f986ed17ab3f9be42c641d7c4242bc6168c51f62c3da828a3",
     }),

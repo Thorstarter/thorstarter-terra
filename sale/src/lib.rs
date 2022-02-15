@@ -386,7 +386,7 @@ pub fn deposit_fcfs(
     if info.funds.len() > 1 {
         return Err(ContractError::NoOtherDenoms {});
     }
-    if amount > Uint128::from(1000 * ONE) {
+    if amount > Uint128::from(250 * ONE) {
         return Err(ContractError::OverFcfsWalletCap {});
     }
     if state.total_amount.saturating_add(amount) > state.raising_amount {

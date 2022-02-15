@@ -5,22 +5,19 @@ async function main() {
   const result = await sendTransaction([
     new MsgExecuteContract(
       walletAddress,
-      "terra10f7w8d5kdzwhlclyk73j887ws8r35972kgzusx",
+      "terra1dvlkmlfa5j0sdzj3f99a4dlhguu9k4acdt5nzx",
       {
-        /*
         configure: {
-          token: "terra1uj2txzk03yq9exxqckuryqf548qjqlphyryjjy",
-          start_time: 1641227400,
-          end_time: 1641245400,
-          raising_amount: "500000000000",
-          offering_amount: "20000000000000",
-          vesting_initial: "100000",
-          vesting_time: 15552000,
+          token: "terra1tnxg0hpk6rgsk2kjx8mtrqv5lnn38fhk3styuh",
+          start_time: 1644939000,
+          end_time: 1645025400,
+          raising_amount: "300000"+"000000",
+          offering_amount: "3529411"+"764705",
+          vesting_initial: "125000",
+          vesting_time: 10368001,
           finalized: false,
-          merkle_root: "85645aa5585433e517505710c35578e78da0ae57189bfc0dd47e2ef5fcb55806",
-          //merkle_root: "e7a4101e22345b5280871e8d70bf50c986a3a738b9890ca4bb741937586a1daa",
+          merkle_root: "5d2c6ad6ee9205b48cdbd85ad13538f66cd8f8781462e4c23f9e4b40ccd3362b",
         },
-        */
       }
     ),
   ]);
