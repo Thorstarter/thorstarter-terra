@@ -1,2 +1,2 @@
 [workspace]
-members = ["tiers", "sale"]
+members = ["tiers", "sale", "saleCommit"]
