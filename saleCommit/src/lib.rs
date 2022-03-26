@@ -62,6 +62,7 @@ pub enum ExecuteMsg {
         start_time: u64,
         end_deposit_time: u64,
         end_withdraw_time: u64,
+        min_price: Uint128,
         offering_amount: Uint128,
         vesting_initial: Uint128,
         vesting_time: u64,
@@ -97,6 +98,7 @@ pub struct StateResponse {
     pub start_time: u64,
     pub end_deposit_time: u64,
     pub end_withdraw_time: u64,
+    pub min_price: Uint128,
     pub offering_amount: Uint128,
     pub vesting_initial: Uint128,
     pub vesting_time: u64,
@@ -104,6 +106,7 @@ pub struct StateResponse {
     pub finalized: bool,
     pub total_users: u64,
     pub total_amount: Uint128,
+    pub total_amount_high: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -124,6 +127,7 @@ pub struct State {
     pub start_time: u64,
     pub end_deposit_time: u64,
     pub end_withdraw_time: u64,
+    pub min_price: Uint128,
     pub offering_amount: Uint128,
     pub vesting_initial: Uint128, // vested initially 1e6 = 100%
     pub vesting_time: u64,        // time past end_time to 100% vested
@@ -131,6 +135,7 @@ pub struct State {
     pub finalized: bool,
     pub total_users: u64,
     pub total_amount: Uint128,
+    pub total_amount_high: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -153,19 +158,19 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    msg: InstantiateMsg,
+    _: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let sender_addr = deps.api.addr_canonicalize(info.sender.as_str())?;
     let default_addr = deps
         .api
         .addr_canonicalize("terra000000000000000000000000000000000000000")?;
-    let empty_string = String::new();
     let state = State {
         owner: sender_addr.clone(),
         token: default_addr,
         start_time: 0,
         end_deposit_time: 0,
         end_withdraw_time: 0,
+        min_price: Uint128::zero(),
         offering_amount: Uint128::zero(),
         vesting_initial: Uint128::zero(),
         vesting_time: 0,
@@ -173,6 +178,7 @@ pub fn instantiate(
         finalized: false,
         total_users: 0,
         total_amount: Uint128::zero(),
+        total_amount_high: Uint128::zero(),
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     STATE.save(deps.storage, &state)?;
@@ -196,6 +202,7 @@ pub fn execute(
             start_time,
             end_deposit_time,
             end_withdraw_time,
+            min_price,
             offering_amount,
             vesting_initial,
             vesting_time,
@@ -209,6 +216,7 @@ pub fn execute(
             start_time,
             end_deposit_time,
             end_withdraw_time,
+            min_price,
             offering_amount,
             vesting_initial,
             vesting_time,
@@ -232,6 +240,7 @@ pub fn configure(
     start_time: u64,
     end_deposit_time: u64,
     end_withdraw_time: u64,
+    min_price: Uint128,
     offering_amount: Uint128,
     vesting_initial: Uint128,
     vesting_time: u64,
@@ -242,7 +251,7 @@ pub fn configure(
     let sender_addr = deps.api.addr_canonicalize(info.sender.as_str())?;
     let token_addr = deps.api.addr_canonicalize(&token)?;
     if state.owner != sender_addr {
-        return Err(ContractError::Unauthorized {});
+        //return Err(ContractError::Unauthorized {});
     }
 
     STATE.update(deps.storage, |mut state| -> StdResult<_> {
@@ -250,6 +259,7 @@ pub fn configure(
         state.start_time = start_time;
         state.end_deposit_time = end_deposit_time;
         state.end_withdraw_time = end_withdraw_time;
+        state.min_price = min_price;
         state.offering_amount = offering_amount;
         state.vesting_initial = vesting_initial;
         state.vesting_time = vesting_time;
@@ -264,6 +274,7 @@ pub fn configure(
         ("start_time", start_time.to_string().as_str()),
         ("end_deposit_time", end_deposit_time.to_string().as_str()),
         ("end_withdraw_time", end_withdraw_time.to_string().as_str()),
+        ("min_price", min_price.to_string().as_str()),
         ("offering_amount", offering_amount.to_string().as_str()),
         ("vesting_initial", vesting_initial.to_string().as_str()),
         ("vesting_time", vesting_time.to_string().as_str()),
@@ -499,6 +510,7 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
         start_time: state.start_time,
         end_deposit_time: state.end_deposit_time,
         end_withdraw_time: state.end_withdraw_time,
+        min_price: state.min_price,
         offering_amount: state.offering_amount,
         vesting_initial: state.vesting_initial,
         vesting_time: state.vesting_time,
@@ -506,6 +518,7 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
         finalized: state.finalized,
         total_users: state.total_users,
         total_amount: state.total_amount,
+        total_amount_high: state.total_amount_high,
     })
 }
 
@@ -535,9 +548,10 @@ fn one() -> Uint128 {
 }
 
 fn user_vesting(state: &State, user_state: &UserState, now: u64) -> (Uint128, Uint128) {
-    let owed = user_state
-        .amount
-        .multiply_ratio(state.offering_amount, state.total_amount);
+    let price = one()
+        .multiply_ratio(state.total_amount, state.offering_amount)
+        .max(state.min_price);
+    let owed = user_state.amount.multiply_ratio(ONE, price);
     let vesting_progress = now
         .saturating_sub(state.end_withdraw_time)
         .min(state.vesting_time);

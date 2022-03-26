@@ -49,6 +49,7 @@ fn test_setup(deposit: bool) -> OwnedDeps<MockStorage, MockApi, CustomMockQuerie
             start_time: 10,
             end_deposit_time: 100,
             end_withdraw_time: 200,
+            min_price: Uint128::from(0 * ONE),
             offering_amount: Uint128::from(500 * ONE),
             vesting_initial: Uint128::from(100000_u128),
             vesting_time: 200,
@@ -75,6 +76,7 @@ fn test_setup(deposit: bool) -> OwnedDeps<MockStorage, MockApi, CustomMockQuerie
                 start_time: 10,
                 end_deposit_time: 100,
                 end_withdraw_time: 200,
+                min_price: Uint128::from(0 * ONE),
                 offering_amount: Uint128::from(500 * ONE),
                 vesting_initial: Uint128::from(100000_u128),
                 vesting_time: 200,
@@ -107,10 +109,12 @@ fn test_instantiate() {
     assert_eq!(0, value.start_time);
     assert_eq!(0, value.end_deposit_time);
     assert_eq!(0, value.end_withdraw_time);
+    assert_eq!("0", value.min_price.to_string());
     assert_eq!("0", value.offering_amount.to_string());
     assert_eq!(false, value.finalized);
     assert_eq!("0", value.total_users.to_string());
     assert_eq!("0", value.total_amount.to_string());
+    assert_eq!("0", value.total_amount_high.to_string());
 }
 
 #[test]
@@ -121,6 +125,7 @@ fn test_configure_error_not_owner() {
         start_time: 10,
         end_deposit_time: 100,
         end_withdraw_time: 200,
+        min_price: Uint128::from(2 * ONE),
         offering_amount: Uint128::from(500 * ONE),
         vesting_initial: Uint128::from(100000_u128),
         vesting_time: 200,
@@ -130,6 +135,38 @@ fn test_configure_error_not_owner() {
     let info = mock_info("addr0001", &[]);
     let err = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap_err();
     assert_eq!(ContractError::Unauthorized {}, err);
+}
+
+#[test]
+fn test_configure() {
+    let mut deps = test_setup(true);
+    let msg = ExecuteMsg::Configure {
+        token: "token0000".to_string(),
+        start_time: 10,
+        end_deposit_time: 100,
+        end_withdraw_time: 200,
+        min_price: Uint128::from(2 * ONE),
+        offering_amount: Uint128::from(500 * ONE),
+        vesting_initial: Uint128::from(100000_u128),
+        vesting_time: 200,
+        merkle_root: MERKLE_ROOT.to_string(),
+        finalized: true,
+    };
+    let info = mock_info("addr0000", &[]);
+    let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+    assert_eq!(0, res.messages.len());
+
+    let res = query(deps.as_ref(), mock_env(), QueryMsg::State {}).unwrap();
+    let value: StateResponse = from_binary(&res).unwrap();
+    assert_eq!("addr0000", value.owner.to_string());
+    assert_eq!("token0000", value.token.to_string());
+    assert_eq!(10, value.start_time);
+    assert_eq!(100, value.end_deposit_time);
+    assert_eq!(200, value.end_withdraw_time);
+    assert_eq!("2000000", value.min_price.to_string());
+    assert_eq!("500000000", value.offering_amount.to_string());
+    assert_eq!(MERKLE_ROOT, value.merkle_root.to_string());
+    assert_eq!(true, value.finalized);
 }
 
 #[test]
@@ -334,6 +371,7 @@ fn test_harvest_error_not_finalized() {
             start_time: 10,
             end_deposit_time: 100,
             end_withdraw_time: 200,
+            min_price: Uint128::zero(),
             offering_amount: Uint128::from(500 * ONE),
             vesting_initial: Uint128::from(100000_u128),
             vesting_time: 200,
@@ -387,6 +425,55 @@ fn test_harvest() {
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0001".to_string(),
                 amount: Uint128::from(50 * ONE),
+            })
+            .unwrap(),
+            funds: vec![],
+        }))],
+    );
+}
+
+#[test]
+fn test_harvest_min_price() {
+    let mut deps = test_setup(true);
+
+    {
+        // Set min price
+        let msg = ExecuteMsg::Configure {
+            token: "token0000".to_string(),
+            start_time: 10,
+            end_deposit_time: 100,
+            end_withdraw_time: 200,
+            min_price: Uint128::from(160 * ONE),
+            offering_amount: Uint128::from(500 * ONE),
+            vesting_initial: Uint128::from(100000_u128),
+            vesting_time: 200,
+            merkle_root: MERKLE_ROOT.to_string(),
+            finalized: true,
+        };
+        let info = mock_info("addr0000", &[]);
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+    }
+
+    let msg = ExecuteMsg::Harvest {};
+    let info = mock_info("addr0001", &[]);
+    let mut env = mock_env();
+    env.block.time = Timestamp::from_seconds(40);
+    let res = execute(deps.as_mut(), env, info.clone(), msg).unwrap();
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "harvest"),
+            attr("user", "addr0001"),
+            attr("amount", "31250"),
+        ]
+    );
+    assert_eq!(
+        res.messages,
+        vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: "token0000".to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: "addr0001".to_string(),
+                amount: Uint128::from(31250_u128),
             })
             .unwrap(),
             funds: vec![],
