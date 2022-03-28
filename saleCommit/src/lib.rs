@@ -161,12 +161,9 @@ pub fn instantiate(
     _: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let sender_addr = deps.api.addr_canonicalize(info.sender.as_str())?;
-    let default_addr = deps
-        .api
-        .addr_canonicalize("terra000000000000000000000000000000000000000")?;
     let state = State {
         owner: sender_addr.clone(),
-        token: default_addr,
+        token: sender_addr.clone(),
         start_time: 0,
         end_deposit_time: 0,
         end_withdraw_time: 0,
@@ -303,8 +300,8 @@ pub fn deposit(
         return Err(ContractError::DepositEnded {});
     }
 
-    let user_input = sender.to_string() + "," + &allocation.to_string();
-    merkle_verify(state.merkle_root, user_input, proof)?;
+    // let user_input = sender.to_string() + "," + &allocation.to_string();
+    // merkle_verify(state.merkle_root, user_input, proof)?;
 
     let amount = info
         .funds
@@ -336,6 +333,7 @@ pub fn deposit(
 
     STATE.update(deps.storage, |mut state| -> StdResult<_> {
         state.total_amount += amount;
+        state.total_amount_high += amount;
         if is_new_user {
             state.total_users += 1;
         }

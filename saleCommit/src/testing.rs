@@ -102,10 +102,7 @@ fn test_instantiate() {
     let res = query(deps.as_ref(), mock_env(), QueryMsg::State {}).unwrap();
     let value: StateResponse = from_binary(&res).unwrap();
     assert_eq!("addr0000", value.owner.to_string());
-    assert_eq!(
-        "terra000000000000000000000000000000000000000",
-        value.token.to_string()
-    );
+    assert_eq!("addr0000", value.token.to_string());
     assert_eq!(0, value.start_time);
     assert_eq!(0, value.end_deposit_time);
     assert_eq!(0, value.end_withdraw_time);

@@ -59,7 +59,7 @@ async function sendTransaction(msgs) {
 
 async function uploadCode(path) {
   const code = fs.readFileSync(path).toString("base64");
-  const storeCodeTx = await sendTransaction(terra, wallet, [
+  const storeCodeTx = await sendTransaction([
     new MsgStoreCode(walletAddress, code),
   ]);
   const codeId = parseInt(

@@ -7,15 +7,13 @@ const {
 } = require("./utils");
 
 async function main() {
-  /*
-  const codeId = await uploadCode("../sale/artifacts/sale.wasm");
-  console.log("codeId", codeId);
-  /**/
-  const codeId = 2090;
+  //const codeId = 2090; // Sale
+  const codeId = 3928; // Sale Commit Testing
 
   const tx = await sendTransaction([
     new MsgInstantiateContract(walletAddress, walletAddress, codeId, {
-      token: "terra16zrhr55k9syrlmeqtae9ahccpgld843gu04qp6",
+      /*
+      token: "terra1td743l5k5cmfy7tqq202g7vkmdvq35q48u2jfm",
       start_time: 1644939000,
       end_time: 1645025400,
       raising_amount: "300000"+"000000",
@@ -24,6 +22,7 @@ async function main() {
       vesting_time: 10368000,
       merkle_root:
         "49b51150f947ef3f986ed17ab3f9be42c641d7c4242bc6168c51f62c3da828a3",
+      */
     }),
   ]);
   console.log("tx", tx);

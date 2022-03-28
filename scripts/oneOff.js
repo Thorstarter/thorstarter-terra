@@ -2,22 +2,23 @@ const { MsgExecuteContract } = require("@terra-money/terra.js");
 const { walletAddress, sendTransaction } = require("./utils");
 
 async function main() {
+  let now = (Date.now() / 1000) | 0;
   const result = await sendTransaction([
     new MsgExecuteContract(
       walletAddress,
-      "terra10f7w8d5kdzwhlclyk73j887ws8r35972kgzusx",
+      "terra1lc3hh05vasu4wl5enq9rmwqr52ttn2zq6qk0mt",
       {
         configure: {
-          token: "terra1vwz7t30q76s7xx6qgtxdqnu6vpr3ak3vw62ygk",
-          start_time: 1641223800,
-          end_time: 1646247600,
-          raising_amount: "500000" + "000000",
-          offering_amount: "20000000" + "000000",
-          vesting_initial: "100000",
-          vesting_time: 15552000,
-          finalized: true,
-          merkle_root:
-            "49b51150f947ef3f986ed17ab3f9be42c641d7c4242bc6168c51f62c3da828a3",
+          token: "terra1td743l5k5cmfy7tqq202g7vkmdvq35q48u2jfm",
+          start_time: now,
+          end_deposit_time: now + 300,
+          end_withdraw_time: now + 600,
+          min_price: "100000",
+          offering_amount: "10000000" + "000000",
+          vesting_initial: "1000000",
+          vesting_time: 1,
+          finalized: false,
+          merkle_root: "",
         },
       }
     ),
