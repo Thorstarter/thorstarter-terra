@@ -370,6 +370,11 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         },
     )?;
 
+    STATE.update(deps.storage, |mut state| -> StdResult<_> {
+        state.total_amount -= amount;
+        Ok(state)
+    })?;
+
     let amount_after_tax = deduct_tax(
         deps,
         Coin {

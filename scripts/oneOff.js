@@ -6,7 +6,7 @@ async function main() {
   const result = await sendTransaction([
     new MsgExecuteContract(
       walletAddress,
-      "terra1lc3hh05vasu4wl5enq9rmwqr52ttn2zq6qk0mt",
+      "terra1u0z63se72dfhcsqmzw9yezyqfajxz9wznxk0xc",
       {
         configure: {
           token: "terra1td743l5k5cmfy7tqq202g7vkmdvq35q48u2jfm",

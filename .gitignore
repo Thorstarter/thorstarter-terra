@@ -4,6 +4,9 @@ merkle/addresses.json
 sale/target
 sale/schema
 sale/artifacts
+saleCommit/target
+saleCommit/schema
+saleCommit/artifacts
 tiers/target
 tiers/schema
 tiers/artifacts

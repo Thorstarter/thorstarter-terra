@@ -8,7 +8,7 @@ const {
 
 async function main() {
   //const codeId = 2090; // Sale
-  const codeId = 3928; // Sale Commit Testing
+  const codeId = 3992; // Sale Commit Testing
 
   const tx = await sendTransaction([
     new MsgInstantiateContract(walletAddress, walletAddress, codeId, {
