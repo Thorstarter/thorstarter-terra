@@ -46,6 +46,8 @@ pub enum ContractError {
     InvalidMerkleProof {},
     #[error("OverAllocation")]
     OverAllocation {},
+    #[error("OverAmount")]
+    OverAmount {},
 }
 
 // MESSAGES
@@ -73,7 +75,9 @@ pub enum ExecuteMsg {
         allocation: Uint128,
         proof: Vec<String>,
     },
-    Withdraw {},
+    Withdraw {
+        amount: Uint128,
+    },
     Harvest {},
     Collect {},
     CollectTokens {
@@ -112,6 +116,7 @@ pub struct StateResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct UserStateResponse {
     pub amount: Uint128,
+    pub amount_high: Uint128,
     pub claimed: Uint128,
     pub owed: Uint128,
     pub claimable: Uint128,
@@ -141,6 +146,7 @@ pub struct State {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct UserState {
     pub amount: Uint128,
+    pub amount_high: Uint128,
     pub claimed: Uint128,
 }
 
@@ -221,7 +227,7 @@ pub fn execute(
             finalized,
         ),
         ExecuteMsg::Deposit { allocation, proof } => deposit(deps, env, info, allocation, proof),
-        ExecuteMsg::Withdraw {} => withdraw(deps, env, info),
+        ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
         ExecuteMsg::Harvest {} => harvest(deps, env, info),
         ExecuteMsg::Collect {} => collect(deps, env, info),
         ExecuteMsg::CollectTokens { amount } => collect_tokens(deps, env, info, amount),
@@ -248,7 +254,8 @@ pub fn configure(
     let sender_addr = deps.api.addr_canonicalize(info.sender.as_str())?;
     let token_addr = deps.api.addr_canonicalize(&token)?;
     if state.owner != sender_addr {
-        //return Err(ContractError::Unauthorized {});
+        // TODO DEBUG
+        /return Err(ContractError::Unauthorized {});
     }
 
     STATE.update(deps.storage, |mut state| -> StdResult<_> {
@@ -300,8 +307,9 @@ pub fn deposit(
         return Err(ContractError::DepositEnded {});
     }
 
-    // let user_input = sender.to_string() + "," + &allocation.to_string();
-    // merkle_verify(state.merkle_root, user_input, proof)?;
+    // TODO DEBUG
+    //let user_input = sender.to_string() + "," + &allocation.to_string();
+    //merkle_verify(state.merkle_root, user_input, proof)?;
 
     let amount = info
         .funds
@@ -323,10 +331,12 @@ pub fn deposit(
         |maybe_user_state| -> Result<_, ContractError> {
             is_new_user = maybe_user_state.is_none();
             let mut user_state = maybe_user_state.unwrap_or_default();
+            // TODO DEBUG
             // if user_state.amount + amount > allocation {
             //     return Err(ContractError::OverAllocation {});
             // }
             user_state.amount += amount;
+            user_state.amount_high += amount;
             Ok(user_state)
         },
     )?;
@@ -347,7 +357,12 @@ pub fn deposit(
     ]))
 }
 
-pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn withdraw(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
     let sender_addr = deps.api.addr_canonicalize(info.sender.as_str())?;
     let sender = deps.api.addr_humanize(&sender_addr)?;
     let state = STATE.load(deps.storage)?;
@@ -358,14 +373,38 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         return Err(ContractError::WithdrawEnded {});
     }
 
-    let mut amount = Uint128::zero();
     USERS_STATE.update(
         deps.storage,
         &sender,
         |maybe_user_state| -> Result<_, ContractError> {
             let mut user_state = maybe_user_state.unwrap();
-            amount = user_state.amount;
-            user_state.amount = Uint128::zero();
+
+            // How long is the withdraw period?
+            let progress_total = Uint128::from(state.end_withdraw_time - state.end_deposit_time);
+            // How far along are we in the withdraw period? (Starting from 100% to 0%)
+            let mut progress =
+                progress_total - Uint128::from(env.block.time.seconds() - state.end_deposit_time);
+            // If we're less that 100% into the withdraw period, top it up to 100%
+            if progress > (progress_total * Uint128::from(95_u128)) / Uint128::from(100_u128) {
+                progress = progress_total;
+            }
+            // Ammount withdrawable is the total you deposited * progress (decreasing)
+            let mut withdrawable = (user_state.amount_high * progress) / progress_total;
+            // If the user's amount left is lower than withdrawable progress, use
+            // that instead (min)
+            if user_state.amount < withdrawable {
+                withdrawable = user_state.amount;
+            }
+            println!(
+                "{} {} {} {}",
+                withdrawable, user_state.amount_high, progress, progress_total
+            );
+            // Error if withdrawing too much
+            if amount > withdrawable {
+                return Err(ContractError::OverAmount {});
+            }
+
+            user_state.amount -= amount;
             Ok(user_state)
         },
     )?;
@@ -535,6 +574,7 @@ fn query_user_state(deps: Deps, user: String, now: u64) -> StdResult<UserStateRe
     let (owed, claimable) = user_vesting(&state, &user_state, now);
     Ok(UserStateResponse {
         amount: user_state.amount,
+        amount_high: user_state.amount_high,
         claimed: user_state.claimed,
         owed: owed,
         claimable: claimable,

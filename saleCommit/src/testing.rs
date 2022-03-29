@@ -315,7 +315,9 @@ fn test_deposit() {
 #[test]
 fn test_withdraw_error_not_started() {
     let mut deps = test_setup(true);
-    let msg = ExecuteMsg::Withdraw {};
+    let msg = ExecuteMsg::Withdraw {
+        amount: Uint128::zero(),
+    };
     let info = mock_info("addr0001", &[Coin::new(50 * ONE, "uusd")]);
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(99);
@@ -326,7 +328,9 @@ fn test_withdraw_error_not_started() {
 #[test]
 fn test_withdraw_error_ended() {
     let mut deps = test_setup(true);
-    let msg = ExecuteMsg::Withdraw {};
+    let msg = ExecuteMsg::Withdraw {
+        amount: Uint128::zero(),
+    };
     let info = mock_info("addr0001", &[Coin::new(50 * ONE, "uusd")]);
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(201);
@@ -335,9 +339,37 @@ fn test_withdraw_error_ended() {
 }
 
 #[test]
+fn test_withdraw_error_over_amount() {
+    let mut deps = test_setup(true);
+    let msg = ExecuteMsg::Withdraw {
+        amount: Uint128::from(51 * ONE),
+    };
+    let info = mock_info("addr0001", &[Coin::new(50 * ONE, "uusd")]);
+    let mut env = mock_env();
+    env.block.time = Timestamp::from_seconds(101);
+    let err = execute(deps.as_mut(), env, info.clone(), msg).unwrap_err();
+    assert_eq!(ContractError::OverAmount {}, err);
+}
+
+#[test]
+fn test_withdraw_error_over_progress() {
+    let mut deps = test_setup(true);
+    let msg = ExecuteMsg::Withdraw {
+        amount: Uint128::from(26 * ONE),
+    };
+    let info = mock_info("addr0001", &[Coin::new(50 * ONE, "uusd")]);
+    let mut env = mock_env();
+    env.block.time = Timestamp::from_seconds(150);
+    let err = execute(deps.as_mut(), env, info.clone(), msg).unwrap_err();
+    assert_eq!(ContractError::OverAmount {}, err);
+}
+
+#[test]
 fn test_withdraw() {
     let mut deps = test_setup(true);
-    let msg = ExecuteMsg::Withdraw {};
+    let msg = ExecuteMsg::Withdraw {
+        amount: Uint128::from(8_u128),
+    };
     let info = mock_info("addr0001", &[]);
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(101);
@@ -347,14 +379,14 @@ fn test_withdraw() {
         vec![
             attr("action", "withdraw"),
             attr("user", "addr0001"),
-            attr("amount", "50000000"),
+            attr("amount", "8"),
         ]
     );
     assert_eq!(
         res.messages,
         vec![SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
             to_address: "addr0001".to_string(),
-            amount: vec![Coin::new(49504950_u128, "uusd")],
+            amount: vec![Coin::new(7_u128, "uusd")],
         }))],
     );
 }
