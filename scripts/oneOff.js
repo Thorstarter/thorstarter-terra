@@ -6,8 +6,9 @@ async function main() {
   const result = await sendTransaction([
     new MsgExecuteContract(
       walletAddress,
-      "terra1u0z63se72dfhcsqmzw9yezyqfajxz9wznxk0xc",
+      "terra1yajdgg725s49kazrvss74p3q9hex69tln3wqdp",
       {
+        /*
         configure: {
           token: "terra1td743l5k5cmfy7tqq202g7vkmdvq35q48u2jfm",
           start_time: now,
@@ -20,6 +21,8 @@ async function main() {
           finalized: false,
           merkle_root: "",
         },
+        */
+        collect: {},
       }
     ),
   ]);

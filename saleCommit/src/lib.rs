@@ -255,7 +255,7 @@ pub fn configure(
     let token_addr = deps.api.addr_canonicalize(&token)?;
     if state.owner != sender_addr {
         // TODO DEBUG
-        // return Err(ContractError::Unauthorized {});
+        return Err(ContractError::Unauthorized {});
     }
 
     STATE.update(deps.storage, |mut state| -> StdResult<_> {
