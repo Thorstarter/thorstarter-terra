@@ -434,6 +434,36 @@ fn test_harvest_error_amount_is_zero() {
 #[test]
 fn test_harvest() {
     let mut deps = test_setup(true);
+
+    {
+        // Deposit as other user
+        let msg = ExecuteMsg::Deposit {
+            allocation: Uint128::from(ALLOCATION),
+            proof: test_merkle_proof(),
+        };
+        let info = mock_info("addr0002", &[Coin::new(350 * ONE, "uusd")]);
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_seconds(40);
+        execute(deps.as_mut(), env, info.clone(), msg).unwrap();
+    }
+    {
+        // Set offering
+        let msg = ExecuteMsg::Configure {
+            token: "token0000".to_string(),
+            start_time: 10,
+            end_deposit_time: 100,
+            end_withdraw_time: 200,
+            min_price: Uint128::zero(),
+            offering_amount: Uint128::from(15000 * ONE),
+            vesting_initial: Uint128::from(1000000_u128), // 100%
+            vesting_time: 1,
+            merkle_root: MERKLE_ROOT.to_string(),
+            finalized: true,
+        };
+        let info = mock_info("addr0000", &[]);
+        execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+    }
+
     let msg = ExecuteMsg::Harvest {};
     let info = mock_info("addr0001", &[]);
     let mut env = mock_env();
@@ -444,7 +474,7 @@ fn test_harvest() {
         vec![
             attr("action", "harvest"),
             attr("user", "addr0001"),
-            attr("amount", "50000000"),
+            attr("amount", "1875046876"),
         ]
     );
     assert_eq!(
@@ -453,7 +483,7 @@ fn test_harvest() {
             contract_addr: "token0000".to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0001".to_string(),
-                amount: Uint128::from(50 * ONE),
+                amount: Uint128::from(1875046876_u128),
             })
             .unwrap(),
             funds: vec![],

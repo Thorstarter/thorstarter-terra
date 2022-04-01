@@ -14,7 +14,7 @@ async function main() {
           end_deposit_time: 1648994400,
           end_withdraw_time: 1649080800,
           min_price: "50000",
-          offering_amount: "10000000" + "000000",
+          offering_amount: "15000000" + "000000",
           vesting_initial: "1000000",
           vesting_time: 1,
           finalized: true,
